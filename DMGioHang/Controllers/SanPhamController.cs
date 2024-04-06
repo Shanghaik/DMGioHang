@@ -32,18 +32,33 @@ namespace DMGioHang.Controllers
             if (logindata == null) return Content("Đã đặng nhập đâu mà đòi thêm thắt cái gì?");
             else
             {
-                // tạo ra 1 GHCT ứng với Sản phẩm đó
-                GHCT ghct = new GHCT()
+                // Lấy ra tất cả sản phẩm trong giỏ hàng của khách hàng vừa đăng nhập
+                var userCart = context.GHCTs.Where(p => p.IdGH == Guid.Parse(logindata)).ToList();
+                bool checkSelected = false; Guid idGHCT = Guid.Empty;
+                foreach (var item in userCart){
+                    if (item.IdSP == id)
+                    {
+                        // Nếu ID sản phẩm trong giỏ hàng của User đã trùng với cái đang được trọn
+                        checkSelected = true; 
+                        idGHCT = item.Id; // Lấy ra cái ID của GHCT để tẹo nữa ta update
+                        break;
+                    }
+                }
+                if (!checkSelected) // Nếu sản phẩm chưa từng được chọn
                 {
-                    Id = Guid.NewGuid(),
-                    IdSP = id,
-                    IdGH = Guid.Parse(logindata),
-                    Amount = amount
-                };
-                context.GHCTs.Add(ghct); context.SaveChanges();
-                return RedirectToAction("Index");
+                    // tạo ra 1 GHCT ứng với Sản phẩm đó
+                    GHCT ghct = new GHCT() { Id = Guid.NewGuid(), IdSP = id, IdGH = Guid.Parse(logindata), Amount = amount };
+                    context.GHCTs.Add(ghct); context.SaveChanges();
+                    return RedirectToAction("Index");
+                }else // Nếu SP đã được chọn
+                {
+                    var ghctUpdate = context.GHCTs.Find(idGHCT);
+                    ghctUpdate.Amount = ghctUpdate.Amount + amount;
+                    context.GHCTs.Update(ghctUpdate); context.SaveChanges(); // Lưu lại
+                    return RedirectToAction("Index");
+                }
+                
             }
-            
         }
     }
 }
